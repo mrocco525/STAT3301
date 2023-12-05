@@ -1,0 +1,80 @@
+---
+title: "Stat 3301: Homework 1"
+date: "Due Wednesday, August 31 by 11:59pm"
+author: "Mason Rocco (rocco.58)"
+output: html_document
+---
+
+\
+
+Setup:
+```{r message=FALSE, warning=FALSE}
+library(alr4)
+library(tidyverse)
+```
+
+\
+
+
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. Use the option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+
+\
+
+#### Question 1
+Import the data set `ames_real_estate.csv` (which is available on Carmen) and use it to do the
+following:
+
+a) Find the smallest and largest observed sale prices separately for each neighborhood.
+b) Make a scatterplot with the square footage of the house on the *x*-axis and the sale price of the house on the *y*-axis.
+c) Write a sentence describing the relationship between `SalePrice` and `SqFt`.
+
+\
+
+##### Solution to Question 1
+
+```{r echo=TRUE}
+library(readr)
+ames <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/ames_real_estate.csv")
+
+ames %>% group_by(ames$Neighborhood) %>% summarize(max(SalePrice))
+ames %>% group_by(ames$Neighborhood) %>% summarize(min(SalePrice))
+
+ames %>% ggplot(aes(x=ames$SqFt, y=ames$SalePrice))+geom_point()+
+  labs(x="Square Feet", y="Sale Price") + 
+  ggtitle("Square Feet vs. Sale Price in Ames, Iowa")
+```
+
+It seems that as the square footage of the house increases, the sale price tends
+to increase as well.
+
+By using the group by method, I was able to separate the dataset by neighborhood.
+Then, I summarized the dataset separately to find the maximum and minimum sale
+price in each of the neighborhoods.
+\
+
+#### Question 2
+Use the data set `Heights` from the library`alr4` to calculate the average height for daughters whose mothers are **at least** 60 inches tall. (The purpose of this question is to make sure you have the package installed correctly.)
+
+\
+
+##### Solution to Question 2
+Your answers go here.
+```{r eval=FALSE}
+heights <- alr4::Heights
+heights %>% filter(heights$mheight >= 60) %>%
+  summarise(mean=mean(heights$dheight))
+```
+
+Using the filter method, I changed the heights dataset to include only the
+values with mothers who have heights that are at least 60 inches. I then 
+took the average of the heights of the daughters within the heights dataset.

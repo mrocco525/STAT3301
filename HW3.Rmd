@@ -1,0 +1,205 @@
+---
+title: "Stat 3301: Homework 3"
+date: "Mason Rocco (rocco.58)"
+author: "Due by September 16, 2022"
+output: html_document
+---
+
+\
+
+Setup:
+```{r message=FALSE}
+library(alr4)
+library(tidyverse)
+```
+
+\
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. Use the option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+- Data files mentioned below are from the `alr4` package unless specified otherwise.
+
+\
+
+#### Concepts \& Application
+
+In this assignment, you will
+
+* write down the components and assumptions of a simple linear regression model
+* identify the mean and variance functions of a SLR model
+* estimate the parameters of a SLR model using summary statistics also using the `lm` function, and interpret the results
+* plot an estimated simple linear regression line
+* compare two fitted regression models
+* use a fitted model to describe relationships between variables
+* assess whether the SLR model is an appropriate model
+
+------
+
+#### Question 1
+<!--
+Least squares fit, confidence interval for slope, confidence interval for mean,
+confidence bands, raw residuals, interpreting models (comparison)
+-->
+This question relates to the **NBA player** data we looked at in class 
+(it is available on Carmen).  Here we will focus on players whose position is
+**forward** (labeled `F` in the data set).
+
+1. Make a plot of player weight vs. player height for all players whose position is
+**forward** . Use the plot to summarize the relationship between weight and height for 
+forwards in the league.
+
+2. We will use the normal simple linear regression model to relate weight to height for these data (weight is the response variable). Write down the general form for the model, starting out with:
+\[
+  weight_i = \beta_0 + \cdots, \;\;\; i = 1, \ldots, n.
+\]
+Continue to fill out the rest of the right hand side of the equation. Your model should be expressed in terms of unknown parameters (e.g., $\beta_1$) and not specific estimated values (e.g.$\widehat{\beta}$) or numbers (e.g., $0.23$). Make sure you include an error term, $e_i$, in the model and **be sure to specify all assumptions about its distribution**. Take a look at the Rmd files for the lecture notes/slides if you are unsure what to include or how to include it.
+
+3. Write down the conditional mean function $E(Y \mid X)$ and the conditional variance function $\mbox{Var}(Y \mid X)$ for weight given height as a function of the unknown parameters. (You will estimate the parameters next.)
+
+4. Calculate the summary statistics ($\bar{x}$, $SXX$, etc.) required to compute the ordinary least squares 
+estimates of the parameters $\beta_0$ and $\beta_1$ in the mean function, and use these
+statistics to calculate the estimated values $\widehat{\beta}_0$ and $\widehat{\beta}_1$.
+
+5. Use the `lm` function in `R` to compute the least squares estimates and compare with your
+results above (they should be the same).
+
+6. Calculate an unbiased estimate of the conditional variance of weight given height.
+
+7. Provide an interpretation of all three estimated parameters.  If any parameters don't
+have a natural interpretation, explain why.
+
+8. Plot the data again, this time including the estimated regression line in the plot.
+
+9. Compare your fitted model for `forwards` to the fitted model for `guards` we discussed in class.
+Summarize the differences in the estimated relationship between weight and height for players
+in these two positions.
+
+
+\
+
+##### Solution to Question 1
+
+**Part 1.1:**
+```{r}
+library(readr)
+nbahtwt <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/nbahtwt.csv")
+nbahtwt %>% filter(pos == "F") %>% ggplot(aes(x = ht, y = wt)) + geom_point() +
+  labs(x = "Height (in.)", y= "Weight (lbs.)", 
+       title = "NBA Forwards Height vs. Weight")
+```
+
+It appears that as the height of NBA forwards increase, the weight tends to
+slightly increase.
+
+**Part 1.2:**
+\[
+  weight_i = \beta_0 + \beta_1height_i+e_i,\;e_i \overset{\mathrm{iid}}{\sim}N 
+  (0,\sigma^2),  \; i = 1, \ldots, n.
+\]
+
+**Part 1.3:**
+\[
+  E(weight_i \mid height_i) = \beta_0 + \beta_1height
+\]
+\[
+  Var(weight_i \mid height_i) = \sigma^2
+\]
+
+**Part 1.4:**
+```{r}
+(sumstats = nbahtwt %>% filter(pos == "F") %>% 
+   summarise(xbar = mean(ht), ybar = mean(wt),
+             SXY = sum((ht - xbar) * (wt - ybar)),
+             SXX = sum((ht - xbar)^2))) %>% as.data.frame()
+(bhat = sumstats %>% 
+    summarise(b1hat = SXY/SXX,
+              b0hat = ybar- b1hat*xbar)) %>% as.data.frame()
+
+```
+
+**Part 1.5:**
+```{r}
+forwards.lm = lm(wt ~ ht, data = nbahtwt, subset = (pos == "F"))
+forwards.lm$coefficients
+```
+
+**Part 1.6:**
+```{r}
+summary(forwards.lm)$sigma^2
+```
+
+**Part 1.7:**
+For every 1 inch increase in height, weight tends to increase by 3.78 pounds
+for forwards. Additionally, if a forward is 0 inches tall, we would expect them
+to weigh around -73.9 pounds. Along with this, the weight tends to vary by up to
+253.25 pounds from the expected weight.
+
+**Part 1.8:**
+```{r}
+nbahtwt %>% filter(pos == "F") %>% ggplot(aes(x = ht, y = wt)) + geom_point() +
+```
+
+
+```{r}
+geom_smooth(method = "lm", se = F) + labs(x = "Height (in.)", y= "Weight (lbs.)", 
+       title = "NBA Forwards Height vs. Weight")
+```
+
+**Part 1.9:**
+When comparing the fitted model for forwards to that of guards, it seems that
+the relationship between height and weight of forwards is not as strong as the
+same relationship for guards, although both relationships are positive, meaning
+that if height increases, weight also tends to increase.
+
+------
+
+
+#### Question 2
+Problem 2.2 from Weisberg: (Data file: `UBSprices`) The international bank UBS...
+<!--interpreting regression lines, appropriateness of SLR -->
+
+
+\
+
+##### Solution to Question 2
+
+**Part 2.2.1:**
+Points above the line have a higher rice price in 2009 than in 2003, while
+points below the line have a lower rice price in 2009 than in 2003.
+
+**Part 2.2.2:**
+```{r}
+prices <- alr4::UBSprices
+prices %>% filter(prices$rice2009-prices$rice2003 ==
+                    max(prices$rice2009-prices$rice2003))
+prices %>% filter(prices$rice2009-prices$rice2003 ==
+                    min(prices$rice2009-prices$rice2003))
+```
+
+Vilnius had the largest increase in rice price while Mumbai had the largest
+decrease in rice price.
+
+**Part 2.2.3:**
+Because $\hat{\beta_1} < 1$, this does not suggest that the prices are
+lower in 2009 than in 2003. Since $\hat{\beta_1} < 1$, this suggests that as the
+price of rice in 2003 gets larger, the price of rice in 2009 tends to slightly
+increase.
+
+**Part 2.2.4:**
+Fitting a simple linear regression model for this problem is not appropriate 
+because of the nature of the data. Since the data is the same variable at
+different times, a linear regression does not model the change in data as well
+as it would two different variables. Additionally, since the prices are measured
+in terms of minutes of labor it takes to purchase the item, a simple linear
+regression model would not be ideal.
+
+------
+

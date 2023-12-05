@@ -1,0 +1,224 @@
+---
+title: "Stat 3301: Homework 10"
+date: "FirstName LastName (name.n)"
+author: "Due by date and time specified on Carmen"
+output: html_document
+---
+
+
+\
+
+
+Setup:
+```{r message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(alr4)
+library(tidyverse)
+library(readr)
+```
+
+\
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. I have set the global option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+- Data files mentioned below are from the `alr4` package unless specified otherwise.
+
+\
+
+#### Concepts \& Application
+
+In this assignment, you will gain experience with
+
+* fitting and interpreting models with two categorical predictors.
+* comparing nested models
+
+------
+
+#### Question 1
+This question concerns the `Rateprof` data from the textbook (a description of the data is given in Problem 1.6 in the book). Here we will work with the variables:
+
+| Variable Name | Description |
+| ------------- | --------------------------------------------------------------------- |
+| `quality` | average student rating of overall quality of the course |
+| `gender` | gender of instructor (recorded as male or female in this data set) |
+| `discipline` | a factor variable describing the type of course, with levels for humanities, social science, pre-professional, and STEM |
+
+There are ratings for $n = 366$ instructors in the data set. A plot of the data by gender and discipline is shown below.
+
+```{r echo = FALSE, fig.width=9, fig.height = 3.5, fig.align="center"}
+Rateprof %>% ggplot(aes(y = quality, x = gender, color = discipline)) + geom_boxplot() + theme_bw(14)
+```
+
+<!-- ![](boxes.png) -->
+
+
+(a) Fit the linear regression model `lm(quality ~ gender*discipline, data = Rateprof)` in `R`. Display the summary of the fitted model. Define appropriate dummy variables and coefficients ($\beta$'s) and write an expression describing the mean function for the model you fit, e.g.:
+\[
+  E(\mathtt{quality} | X) = \beta_0 + \cdots .
+\]
+Do not use estimated (numeric) values for the coefficients in the expression; use the unknown $\beta$ parameters.
+
+(b) Explain the meaning of the coefficient labeled `(Intercept)` in the output.
+
+(c) Use the fitted model to construct a 95% confidence interval for the following difference in means:
+\[
+  E(quality \mid male, STEM) - E(quality \mid male, Hum).
+\]
+Hint: First figure out which linear combination of regression coefficients corresponds to this difference, then estimate the difference, compute its standard error and proceed as usual.
+
+
+
+### Solution to Question 1
+##### Part a
+```{r}
+rateprof <- alr4::Rateprof
+rate.lm <- lm(quality ~ gender*discipline, data = rateprof)
+summary(rate.lm)
+```
+\[
+E(quality | gender*discipline) = \beta_0 + \beta_1U_{Male_i} +\beta_2U_{SocSci_i} + 
+\beta_3U_{STEM_i} + \beta_4U_{Pre-prof_i} + \beta_5U_{SocSci_i}U_{male_i} +
+\beta_6U_{STEM_i}U_{male_i} + \beta_7U_{Pre-Prof}U_{male_i}
+\]
+
+##### Part b
+The coefficient labeled intercept in the above output is the quality for female
+instructors in the humanities discipline.
+
+##### Part c
+$\hat\beta_6 - \hat\beta_1$
+
+```{r, eval=FALSE}
+vcov(rate.lm)
+```
+
+
+```{r}
+beta_hat_1 <- 0.18669
+beta_hat_6 <- -0.01961
+beta_hat <- beta_hat_6 - beta_hat_1
+v_1 <- 0.02108349
+v_6 <- -0.03617642
+v <- 0.01006973
+se <- v_6 + v_1 -2*v
+t <- qt(.05/2, 358, lower.tail = FALSE)
+lwr <- beta_hat - (t * se)
+upr <- beta_hat + (t * se)
+print(c(lwr,upr))
+```
+
+------
+
+#### Question 2
+
+The Cravens data (on Carmen) are for a company that sells products in several sales
+territories, each of which is assigned to a single sales representative. A
+random sample of 25 sales territories resulted in the data, and the
+variables include Sales as the response, Time, Poten, AdvExp, Share,
+Change, Accounts, Work and Rating as predictors. A regression analysis was conducted to determine whether the above predictors could explain sales in each territory.
+
+`Data source: Statistics for Business and Economics, 13th Edition, by Anderson, Sweeney,Williams, Camm and Cochran`
+
+
+Variable  | Description
+----------|----------------------
+`sales`   | Total sales credited to the sales representatives
+`time`    | Length of time employed in months
+`poten`   | Market potential
+`acvExp`  | Advertising expenditure in the sales territory
+`share`   | Market share; weighted average for the past four years
+`change`  | Change in the market share over the previous four years
+`accounts`| Number of accounts assigned to the sales representative
+`work`    | Workload; a weighted index based on annual purchase and concentration of accounts
+`rating`  | Sales representative overall rating on eight performance dimensions; an aggregate rating on a 1-7 scale.
+
+Consider a model that uses the `time` and `advExp` as the predictors to predict `sales`. 
+
+
+
+(a) Write down the multiple linear regression model that uses `time` and `advExp`
+to predict `sales`.
+
+(b) Use `R` to fit the multiple linear regression model in part (a). Use the `summary()` function to display the standard summary of the fitted model.
+
+
+(c) Suppose we want to test whether adding predictors `accounts` and `share` is useful to explain additional variability in sales after adjusting for the association between `sales`, `time` and `advExp`.
+    (i) Write down the hypotheses needed to perform this test. 
+    (ii) Perform this test "by hand" i.e., calculating the test statistic using sums of squares the way we did in class, without using the `anova()` function. Make sure to write a conclusion in context.
+    (iii) Use the `anova()` function to verify your answer in part (ii)
+
+\vspace{0.5cm}   
+
+(d) Conduct an **overall** `F-test` to  test `sales` on `time`, `advExp`,`accounts` and `share`.
+    (i) Write down the hypotheses needed to perform this test.
+    (ii) Perform this test using any of the methods from class. Make sure to write a conclusion in context. 
+
+\
+
+### Solution to Question 2
+#### Part a
+```{r}
+Cravens <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/Cravens.csv")
+```
+\[
+(Sales|time,advExp) = \beta_0 + \beta_1time_i + \beta_2advExp_i + e_i
+\]
+
+#### Part b
+```{r}
+craven.lm <- lm(sales ~ time + advExp, data = Cravens)
+summary(craven.lm)
+```
+
+#### Part c
+##### i
+$H_0: \beta_3=\beta_4=0$
+\
+$H_1: \beta_3$ or $\beta_4 \neq0$
+
+##### ii
+```{r}
+alt <- lm(sales ~ time + advExp + accounts + share, data = Cravens)
+RSS.null <- sum(resid(craven.lm)^2)
+df.null <- craven.lm$df.residual
+RSS.alt <- sum(resid(alt)^2)
+df.alt <- alt$df.residual
+Fstat <- ((RSS.null - RSS.alt)/(df.null - df.alt)) / (RSS.alt/df.alt)
+pf(Fstat, df1 = df.null, df2 = df.alt, lower.tail = F)
+```
+
+When looking at the p-value, we see that it is very low (lower than any reasonable
+value of $\alpha$). This means that we will reject the null hypothesis and conclude
+that adding the predictors accounts and share to the model is useful to explain
+additional variability after adjusting for the addociation between sales, time,
+and advExp.
+
+##### iii
+```{r}
+anova(alt, craven.lm)
+```
+The anova results confirm the conclusion from the prior step.
+
+##### Part d
+##### i
+$H_0: \beta_1 = \beta_2 = \beta_3 = \beta_4 = \beta_5 = 0$
+\
+$H_1:$ At least one of $\beta_1,\beta_2,\beta_3,\beta_4,\beta_5 \neq0$
+
+##### ii
+```{r}
+null <- lm(sales~1, data = Cravens)
+anova(null, alt)
+```
+
+As can be seen by the above anova, the p-value is very low. This means we will
+reject the null hypothesis, which shows that the predictors we used for this model
+are helpful in explaining variance of the model.

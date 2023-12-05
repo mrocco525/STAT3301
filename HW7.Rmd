@@ -1,0 +1,158 @@
+---
+title: "Stat 3301: Homework 7"
+date: "Mason Rocco (rocco.58)"
+author: "Due by October 26, 2022"
+output: html_document
+---
+
+
+\
+
+
+Setup:
+```{r message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(alr4)
+library(tidyverse)
+```
+
+\
+
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. I have set the global option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+- Data files mentioned below are from the `alr4` package unless specified otherwise.
+
+\
+
+#### Concepts \& Application
+
+In this assignment, you will gain experience with
+
+* calculating the covariance matrix for the estimated regression coefficients.
+* calculating various standard errors.
+* interpreting coefficients in a MLR model.
+* performing hypothesis tests about individual coefficients.
+* computing confidence intervals for the mean of the response.
+
+------
+
+#### Question 1
+
+This question is concerned with the following variables from the NBA data set for **guards** only:
+
+| Variable      | Description                            |
+| ------------- | -------------------------------------- |
+| `wt`          | weight of player (guard) in pounds     |
+| `ht`          | height of player (guard) in inches     |
+| `age`         | age of player (guard) in years         |                  
+
+We will be interested in using `ht` and `age` jointly to predict `wt` for **guards** (ignoring the other positions for now) using the linear regression model
+\[
+  wt_i = \beta_0 + \beta_1 ht_i + \beta_2 age_i + e_i,
+\]
+where $e_i \stackrel{\mathrm{iid}}{\sim}\mbox{N}(0, \sigma^2)$, $i = 1, \ldots, n$. A summary of the
+fitted regression model is
+
+```{r, echo = FALSE, message = FALSE}
+guards = read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/nbahtwt.csv") %>% filter(pos == "G")
+summary(lm(wt ~ ht + age, data = guards))
+```
+
+
+(a) Use the **X** matrix used to fit the model along with $\hat{\sigma}$ to compute the estimated covariance
+matrix for the estimated coefficient vector, 
+$\widehat{\mbox{Var}}(\hat{\boldsymbol \beta} \mid X)$. Show your code and computations. Verify your
+result by comparing your answer to the result obtained using the `vcov` function.
+
+(b) Use your result from part (a) to calculate the standard error for the estimated coefficient for the
+regressor `ht`. Verify your answer by comparing it with the summary of the fitted regression model 
+displayed above.
+
+(c) The estimated coefficient for height is $\hat{\beta}_1 = 4.4250$. Write a sentence interpreting
+this numeric value in terms of the relationship between height and weight.
+
+(d) Now focusing on the coefficient for age, the `t value` displayed in the output above is 2.072. 
+Write down the hypotheses this test statistic can be used to test using appropriate statistical notation.
+Use the output above to make a conclusion (write a sentence describing the result).
+
+(e) Say we are interested in estimating the average weight for 20-year-old guards who are 78.5" tall. Compute the standard error needed to compute a confidence interval for this quantity **without** using the `predict` function. Confirm your answer using the `predict` function.
+
+(f) Use your result from (e) to compute a 90\% confidence interval for the average weight for 20-year-old 
+guards who are 78.5" tall. Confirm your answer using the `predict` function, and write a sentence 
+interpreting the confidence interval in words.
+
+
+
+\
+
+
+#### Solution to Question 1
+##### a
+```{r}
+library(readr)
+nbahtwt <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/nbahtwt.csv")
+guards <- nbahtwt %>% filter(pos == "G")
+guards.mod <- lm(wt ~ ht + age, data = guards)
+X <- model.matrix(guards.mod)
+sig2hat <- summary(guards.mod)$sigma^2
+cov.matrix <- sig2hat * solve(t(X)%*%X)
+vcov(guards.mod)
+print(cov.matrix)
+```
+
+##### b
+```{r}
+sqrt(diag(vcov(guards.mod)))
+summary(guards.mod)$coefficients[,2]
+```
+
+##### c
+Given that the value of $\hat\beta_1$ is 4.4250, we can say that as the height
+of NBA guards increases by 1 inch, the weight of NBA guards tends to increase by
+4.425 pounds.
+
+##### d
+$H_0:\hat\beta_2=0$
+$H_1:\hat\beta_2\neq0$
+Since the p-value for the test is .03, less than 0.05 (a reasonable $\alpha$ value)
+we can say that we will reject the null hypothesis that $\hat\beta_2=0$. This tells
+us that $\beta_2$ is a useful predictor after adjusting for the other regressors
+in this model.
+
+##### e
+```{r}
+Y <- matrix(cbind(rep(1, 202), guards$age, guards$ht), ncol = 3)
+YtYinv <- solve(t(Y)%*%Y)
+
+ystar <- matrix(c(1, 20, 78.5), ncol = 1)
+tmp <- t(ystar)%*%YtYinv%*%ystar
+sighat <- summary(guards.mod)$sigma
+sefit <- sighat * sqrt(tmp)
+print(sefit)
+print(predict(guards.mod, newdata = data.frame(ht=78.5, age=20), 
+              interval = "confidence", se.fit = TRUE)$se.fit)
+```
+
+##### f
+```{r}
+(-148.8194 + (4.425*78.5) + (.4146*20)) + c(-1,1) * qt(.9, df=199)*c(sefit)
+
+predict(guards.mod, newdata = data.frame(ht=78.5, age=20), 
+              interval = "confidence", level = .9)
+```
+
+We can see that the 90% confidence interval for the average weight for 20 year 
+old guards who are 78.5" tall is *(204.60, 209.07)*. This tells us that we are
+90% confident that a 20 year old guard who is 78.5" tall would weigh between
+204.60 and 209.07 pounds.
+
+------

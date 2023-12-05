@@ -1,0 +1,212 @@
+---
+title: "Stat 3301: Homework 5"
+date: "Mason Rocco (rocco.58)"
+author: "Due by October 3, 2022"
+output: html_document
+---
+
+
+\
+
+
+Setup:
+```{r message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(alr4)
+library(tidyverse)
+library(broom)
+```
+
+\
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. I have set the global option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+- Data files mentioned below are from the `alr4` package unless specified otherwise.
+
+\
+
+#### Concepts \& Application
+
+In this assignment, you will
+
+* calculate and interpret an $R^2$ statistic.
+* use appropriate residuals to check the normal SLR model assumptions.
+* fit regression models with the predictor in log scale.
+* interpret $\hat{\beta}_1$ when the predictor is in log scale.
+* construct confidence intervals when the predictor is in log scale.
+* make a plot of a fitted model when the predictor is in log scale.
+
+------
+
+#### Question 1
+<!--
+R2, residual diagnostic plots
+-->
+This is continuation of the question on the last homework that relates to the **NBA player** 
+data we looked at in class (it is available on Carmen).  Here we will focus on players whose 
+position is **forward** (labeled `F` in the data set).
+
+Use the statistical model you fit on the last homework assignment to answer the following questions.
+
+1. Calculate the total sum of squares, the regression sum of squares and the residual sum
+of squares for the fitted regression model.  Use these to calculate the coefficient of
+determination for the model. What do these values tell you about the
+strength of the linear relationship between weight and height for NBA forwards?
+
+2. Use appropriate residual plots to assess whether the fitted mean function is appropriate.
+Do the plots indicate any lack of fit?
+
+3. Use appropriate residual plots to assess the assumption that the variance of player
+weight is the same at all heights.
+
+4. Use appropriate residual plots to assess the assumption that the error terms in the model
+are normally distributed. 
+
+
+\
+
+
+##### Solution to Question 1
+\
+
+### 1
+```{r}
+library(readr)
+nbahtwt <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/nbahtwt.csv")
+forwards <- subset(nbahtwt, pos == "F")
+forwards.lm <- lm(wt ~ ht, data = forwards)
+RSS <- sum(resid(forwards.lm)^2)
+SSreg <- sum((fitted(forwards.lm) - mean(forwards$wt))^2)
+SYY <- RSS + SSreg
+R2 <- SSreg/SYY
+print(RSS)
+print(SSreg)
+print(SYY)
+print(R2)
+```
+
+When looking at the value of the coefficient of determination, we can see that
+there is not a very strong linear relationship between the weight and height for
+NBA forwards, since the value is 0.1119, which is relatively low.
+
+### 2
+```{r}
+(eplot = augment(forwards.lm) %>% ggplot(aes(x=.fitted, y=.resid)) +
+   geom_point(size = 2) + geom_hline(yintercept=0) + theme_bw(22) + 
+   xlab("Fitted Values") + ylab("Residuals") + geom_smooth(se=FALSE))
+```
+
+This plot seems to be relatively linearly distributed, so there is no clear 
+indication of the mean function not being appropriate.
+
+### 3
+```{r}
+plot(fitted(forwards.lm), rstandard(forwards.lm),
+     xlab = "Fitted Values", 
+     ylab = "Standardized Residuals"); abline(h=0)
+```
+
+This plot shows that the variance of player weight is mostly the same at all
+heights.
+
+### 4
+```{r}
+qqnorm(resid(forwards.lm)); qqline(resid(forwards.lm))
+hist(resid(forwards.lm), xlab = "Residuals")
+```
+
+When looking at these residual plots, we can see that the error terms in the
+model are normally distributed, as there is no strong evidence against normality.
+
+------
+
+
+#### Question 2
+<!--
+...
+-->
+The data set `ufcwc` in the `alr4` package contains data on a sample of western cedar trees
+that was taken in 1991 in the Upper Flat Creek stand of the University of Idaho
+Experimental Forest. Each case in the data set represents a tree. In this question we will 
+look at the relationship between the variables:
+
+| Variable      | Description                                                    |
+| ------------- | -------------------------------------------------------------- |
+| `Height`      | height of the tree in decimeters                               |
+| `Dbh`         | diameter of the tree in mm measured at 137 cm above the ground |
+
+We will be interested in using tree diameter (`Dbh`) to predict tree height (`Height`).
+
+(a) For the linear regression model $Height_i = \beta_0 + \beta_1 \log Dbh_i + e_i$, report
+the numeric values of estimated parameters $\hat{\beta}_0$, $\hat{\beta}_1$ and $\hat{\sigma}^2$.
+
+(b) Make a scatterplot with `log(Dbh)` on the x-axis and `Height` on the y-axis, and add
+the estimated linear regression line to the plot.
+
+(c) Make a scatterplot with `Dbh` (on its original scale) on the x-axis and `Height` on 
+the y-axis. Use your fitted model from part (a) to add a (curved) line to the plot that represents 
+the estimated average tree height as a function of tree diameter, $\hat{E}(\mathtt{Height} \mid 
+\mathtt{Dbh})$. Add dashed (curved) lines to the plot that represent point-wise, 95\% confidence
+intervals for the mean.
+
+(d) Using the estimated slope coefficient, $\hat{\beta}_1$, write a sentence that quantifies
+what our model says about how average tree height depends on tree diameter (on its original scale).
+
+
+
+\
+
+##### Solution to Question 2
+\
+
+### a
+```{r}
+library(alr4)
+trees <- alr4::ufcwc
+treemod <- lm(Height ~ log10(Dbh), data = trees)
+treesum <- summary(treemod)
+treemod
+treesum$sigma^2
+```
+
+For this linear regression model, $\hat\beta_0 = -463.3$,
+$\hat\beta_1 = 275.2$, and $\hat\sigma^2 = 1111.185$.
+
+### b
+```{r}
+trees%>%ggplot(aes(x = log(Dbh), y = Height)) + geom_point() + 
+    geom_smooth(method = "lm", se = F)
+```
+
+### c
+```{r}
+dbh.grid <- data.frame(Dbh=seq(from=min(trees$Dbh), to=max(trees$Dbh), 
+                                          length.out=139))
+ypred <- predict(treemod, newdata = dbh.grid, interval = "confidence", level = .95)
+plot(trees$Dbh, trees$Height, xlab = "Tree Diameter", ylab = "Tree Height",
+     main = "Estimated Mean Function with 95% Confidence Interval")
+lines(dbh.grid[,1], ypred[,1], col="blue")
+lines(dbh.grid[,1], ypred[,2], col="blue", lty=2)
+lines(dbh.grid[,1], ypred[,3], col="blue", lty=2)
+```
+
+
+### d
+```{r}
+betahat_1 <- 275.2
+betahat_1 * log(1.1)
+```
+
+Since we know that $\hat\beta_1 = 275.2$, we can say that a 10% increase in height
+is associated with an additional 26.23mm of diameter for a western cedar tree in
+the Upper Flat Creek stand of the University of Idaho Experimental Forest.
+
+------

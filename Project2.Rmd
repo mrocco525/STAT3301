@@ -1,0 +1,176 @@
+---
+title: "STAT 3301"
+author: "Project 2"
+date: "Mason Rocco (rocco.58)"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r include=FALSE}
+library(broom)
+library(tidyverse)
+library(GGally)
+```
+
+#### Instructions
+
+Use R Markdown to prepare your answers to the questions posed in the parts below. Unlike a usual homework assignment, where an answer to a question might include some R output and numerical values from calculations, most questions below require written responses in sentence/paragraph form. For these questions, you will not receive full credit for simply providing R output or the
+result of calculations: you need to clearly describe what you have done and provide appropriate discussion and interpretation. You can include small amounts of R output and calculations in R in your responses, but these should be **in support of your written answers** and are not a substitute for a full written response. Do not include R code/output that is unrelated to your written answers. Your write-up should be easy to read and appropriately formatted; plots and graphs should be appropriately sized, with easy to read labels and symbols; numeric results should be presented in a way that is easy to read.
+
+
+#### Data Description
+
+Concrete is one of the most popular building materials in the world. It is a composite material, made from a mixture of other materials such as cement, water, fine aggregate (such as sand), and coarse aggregate (such as gravel). One advantage of concrete is that over time the chemical reactions in the mixture complete, causing it to harden and gain strength. The data set "concrete_data.csv" on Carmen contains measurements of 1030 samples of concrete from Yeh (1998). The following variables are included in the data set:
+
+
+| Variable Name | Description |
+| ------------: | :-------------------------------------------------------------------- |
+| `cement` | The amount of cement in the sample (in $kg/m^3$)  |
+| `slag` | The amount of blast furnace slag in the sample (in $kg/m^3$) |
+| `flyash` | The amount of fly ash in the sample (in $kg/m^3$) |
+| `water` | The amount of water in the sample (in $kg/m^3$) |
+| `superplasticizer` | The amount of superplasticizer in the sample (in $kg/m^3$) |
+| `coarseaggregate` | The amount of coarse aggregate in the sample (in $kg/m^3$) |
+| `fineaggregate` | The amount of fine aggregate in the sample (in $kg/m^3$) |
+| `age` | The age of the sample (in days) |
+| `csMPa` | The compressive strength of the sample (in MPa)|
+
+
+#### Questions to Answer
+
+1. Consider the MLR model that uses the amount of cement $(X_1)$ and the natural log of age $(X_2)$ as predictors of the strength of the concrete samples $Y$. Write down the statistical model using appropriate notation, being sure to include all of the model assumptions. Fit the model, and provide a table with the estimated regression coefficients and standard errors, as well as the usual t statistics and p-values that are reported in standard regression output. 
+
+2. Interpret the estimated coefficients $\hat{\beta}_1$ and $\hat{\beta}_2$. Make sure the interpretation of $\hat{\beta}_2$ is on the original scale of the age variable and not on the log scale. Also calculate 95% confidence intervals for $\hat{\beta}_1$ and $\hat{\beta}_2$ and report them alongside the estimates.
+
+3. More than half of the samples in the data set do not contain any flyash. Thus it may make sense to treat flyash as a categorical regressor rather than a continuous one. Create a new binary variable in the data set called catflyash which has a value of 1 if there was some amount of flyash in the mixture and a value of 0 otherwise. Fit a new model that includes this new predictor (as $X_3$) in a model that also uses amount of cement $(X_1)$ and the natural log of age $(X_2)$ as predictors of the strength of the concrete samples $Y$. Make sure your model also includes an intercept term. Report the estimated mean and variance functions using the numeric estimates from the summary of the fitted model (you do not have to provide a table of coefficients). Interpret the value of $\hat{\beta}_3$. Give and interpret the value of $R^2$.
+
+4. Perform a hypothesis test to assess whether the categorical predictor catflyash is useful in this full model. Be sure to specify the hypotheses you are testing in terms of the regression coefficients, and provide a written description of how you perform the test (i.e. instead of just using an R function to produce output, you should show the formula for the test statistic and the p-value). Explain the difference between the estimated models with and without catflyash as a predictor (e.g. differences in values such as $R^2$, $\boldsymbol{\hat{\beta}}$, and $\hat{\sigma}^2$) and discuss this in the context of the results of the test.
+
+5. Suppose an engineer is interested in the relationship between age and the average strength of the concrete for samples that contain 300 $kg/m^3$ of cement. They want to examine this relationship separately for samples that do and do not contain flyash. Construct an appropriate plot to display these relationships based on the model above. Make sure to plot age on its original scale and include a visualization of the uncertainty present in the relationships (use a 95% confidence level for the uncertainty). Write a couple of sentences about what the plot says about the relationship in language that the engineer would understand. Calculate and interpret a 95% confidence interval for the true average strength of a 200 day old sample of concrete that contains 300 $kg/m^3$ of cement but does not contain flyash. (If you do your plot correctly you should be able to verify the interval from the plot). 
+
+
+#### References
+I-Cheng Yeh, "Modeling of strength of high performance concrete using artificial 
+neural networks," Cement and Concrete Research, Vol. 28, No. 12, pp. 1797-1808 (1998)
+
+## Problem 1
+An MLR model with csMPa as the response variable and amount of cement and natural
+log of the age as predictor variables assumes linearity, constant variance, and 
+normal distribution of errors.
+\
+The MLR model can be written as such: 
+$csMPa_i = \beta_0 + \beta_1(Cement_i) + \beta_2(logAge_i) + e_i,$
+$e_i\stackrel{\mathrm{iid}}{\sim}\mbox{N} (0, \sigma^2), \;\;\; i = 1, \ldots, n$.
+\
+Below are the fitted values for the MLR model.
+```{r include=FALSE}
+concrete_data <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/concrete_data.csv")
+concrete.lm <- lm(csMPa ~ cement + log(age), data = concrete_data)
+```
+
+```{r echo=FALSE}
+print(summary(concrete.lm)$coefficients)
+```
+
+## Problem 2
+We can see that $\hat\beta_1 = 0.0797$ and $\hat\beta_2 = 7.7541$. The
+value of $\hat\beta_1$ means that as the strength of the concrete sample increases
+by one csMPa, the cement in the sample tends to increase by **0.0797** $kg/m^3$.
+Additionally, given that $\hat\beta_2 = 7.7541$, we can say that a 10% increase
+in concrete sample strength is associated with a 73.9% increase in the age of 
+the sample.
+```{r include=FALSE}
+t <- qt(0.95, 1027)
+0.07972957 + c(-1,1) * (0.003332474*t)
+7.754123 + c(-1,1) * (0.292303*t)
+```
+
+Also, a 95% confidence interval for $\hat\beta_1=0.08$ is
+**(0.074,0.085)**, and a 95% confidence interval for $\hat\beta_2=7.75$ is 
+**(7.273, 8.235)**.
+
+## Problem 3
+An MLR model with csMPa as the response variable and amount of cement, natural
+log of the age, and a categorical regressor of flyash as predictor variables 
+assumes linearity, constant variance, and normal distribution of errors.
+\
+The MLR model can be written as such: 
+$csMPa_i = \beta_0 + \beta_1(Cement_i) + \beta_2(logAge_i) + \beta_3U_{i3}+ e_i,$
+$e_i\stackrel{\mathrm{iid}}{\sim}\mbox{N} (0, \sigma^2), \;\;\; i = 1, \ldots, n$.
+Below are the estimated mean and variance functions for the MLR model.
+```{r include=FALSE}
+catflyash = as.numeric(concrete_data$flyash > 0)
+concrete.cat = lm(csMPa ~ cement + log(age) + catflyash, data = concrete_data)
+summary(concrete.cat)
+vcov(concrete.cat)
+```
+$E(csMPa_i|catflyash=0) = \hat\beta_0 = -15.497982$
+\
+$E(csMPa_i|catflyash=1) = \hat\beta_0 + \hat\beta_3 = -15.497982 + 4.620236 = -10.88$
+\
+$Var(csMPa_i|catflyash) = \sigma^2 = 10.97$
+\
+$R^2 = 0.5703$
+
+The value of $\hat\beta_3 = 4.62$ means that a sample that includes flyash
+will tend to have a positive difference of 4.62 csMPa.
+
+\
+The value of $R^2 = 0.5703$ means that approximately 57% of the variance in the
+model can be explained when the model includes flyash along with the other
+variables, log of age and amount of cement.
+
+## Problem 4
+```{r echo=FALSE}
+t <- -10.88/sqrt(10.97*0.5367189114)
+p <- 2*pt(t, df=1026)
+```
+$H_0: \beta_3 = 0$
+\
+$H_1: \beta_3 \neq 0$
+\
+$t = \frac{\beta_3-0}{se(\beta_3|X)} = \frac{-10.88}{\sqrt{10.97*0.536719}} = -4.48$
+\
+$p-value = 8.16*10^{-6} \approx0$
+\
+Given that the p-value is so low, we will reject the null hypothesis that $\beta_3=0$.
+This means that we can say there is statistically significant evidence that catflyash
+is useful in a model that already contains the amount of cement and the log of age.
+We also know this is true because of the value of $\hat\sigma^2$ decreases from
+11.17 to 10.97 when we use catflyash in the model. We can also see that the $R^2$
+value increases from .55 to .57, meaning that more of the variance of the model
+can be explained when catflyash is in the model.
+
+## Problem 5
+```{r echo=FALSE}
+gsize = 1030
+newDat = data.frame(age = rep(seq(from = min(concrete_data$age),
+  to = max(concrete_data$age), length.out = gsize)), 
+  catflyash,
+  cement = rep(300, gsize, length.out = gsize))
+
+eplotinfo = predict(concrete.lm, newdata = newDat, interval = "confidence", 
+                    level = .95)
+
+bind_cols(as.data.frame(eplotinfo), newDat) %>% 
+  mutate(Flyash = factor(catflyash, labels = c("No flyash", "Flyash"))) %>%
+  ggplot(aes(x = age)) + xlab("Age") +
+  geom_line(aes(y = fit, color = Flyash)) + ylab("Strength(csMPa)") + 
+  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = Flyash), alpha = 0.2) +  theme_bw(22) 
+```
+\
+When looking at the plot above, we can see that age and flyash both have an effect on
+the strength of the concrete sample. As can be seen by the colors, the red line is
+lower on average than the blue line, meaning that samples that have flyash are,
+on average, stronger. Additionally, we can see that as the age of the sample
+increases, the strength of the sample also tends to increase.
+
+```{r echo=FALSE}
+predict(concrete.lm, newdata = data.frame(age=200,cement=300,catflyash=0), 
+        interval = "confidence", level = .95)
+```
+We can also note that the 95% confidence interval for the true average strength of a 
+200 day old sample of concrete with 300 $kg/m^3$ of cement without flyash is
+**(52.45, 55.27)**. This interval can also be noted from the graph above, as the
+red area on the graph where age is 200 highlights the same range.
+

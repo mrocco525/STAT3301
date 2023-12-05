@@ -1,0 +1,178 @@
+---
+title: "Stat 3301: Homework 6"
+date: "Mason Rocco (rocco.58)"
+author: "Due by October 19, 2022"
+output: html_document
+---
+
+
+\
+
+
+Setup:
+```{r message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(alr4)
+library(tidyverse)
+library(readr)
+library(broom)
+library(GGally)
+```
+
+\
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. I have set the global option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+- Data files mentioned below are from the `alr4` package unless specified otherwise.
+
+\
+
+#### Concepts \& Application
+
+In this assignment, you will
+
+* plot pairwise relationships between three variables.
+* fit a multiple linear regression model in R.
+* gain experience with several matrix operations in R.
+* calculate a "hat value" (leverage) for a case.
+* use plots of standardized residuals to assess model fit.
+
+------
+
+#### Question 1
+
+This question is concerned with the following variables from the NBA data set for **guards** only:
+
+| Variable  | Description                            |
+|:--------- |:-------------------------------------- |
+| `wt`      | weight of player (guard) in pounds     |
+| `ht`      | height of player (guard) in inches     |
+| `age`     | age of player (guard) in years         |                  
+
+We will be interested in using `ht` and `age` jointly to predict `wt` for **guards** (ignoring the other positions for now).
+
+(a) Make a scatterplot matrix for the variables `ht`, `age` and `wt`. Use the plots to describe the pairwise relationships between the variables.
+
+(b) Use `R` to fit a multiple linear regression model with mean function $E(\mathtt{wt} \mid
+\mathtt{ht}, \mathtt{age}) = \beta_0 + \beta_1 \mathtt{ht} + \beta_2 \mathtt{age}$ and
+variance function $\mbox{Var}(\mathtt{wt} \mid \mathtt{ht}, \mathtt{age}) = \sigma^2$.
+Use the `summary` function to display `R`'s standard summary of the fitted model.
+
+(c) Report the numeric values of the parameter estimates $\hat{\beta}_j$, $j = 0, 1, 2$, 
+and $\hat{\sigma}^2$.
+
+(d) Report the numeric value of the degrees of freedom associated with the fitted model. Say what
+formula you use to calculate this value.
+
+(e) Use R to compute and display the 3x3 matrix $X^T X$, where *X* is the $202 \times 3$ matrix used to fit the regression model.
+
+(f) Use R to compute and report the 3x3 matrix $(X^TX)^{-1}$.
+
+(g) Nate Robinson should be the first case in the data set ($i = 1$). Compute and report 
+the leverage $h_{11}$ for Nate Robinson under this MLR model in two ways: (i) using the 
+`hatvalues` function and (ii) by computing the **H** matrix directly and reporting the 
+first diagonal element.
+
+(h) Make three plots of the standardized residuals $r_i$: (i) $r_i$ versus the fitted values
+$\hat{y}_i$, (ii) $r_i$ versus `ht` and (iii) $r_i$ versus `age`. Do the plots suggest any
+problems with our assumptions about the mean and variance functions?
+
+(Note: you will notice some diagonal "stripes" in the plot of residuals versus fitted values.
+These are due to the fact that the weights are rounded to the nearest pound, and are **not** 
+a cause for concern.)
+
+
+
+\
+
+
+### Solution to Question 1
+#### a
+```{r}
+nbahtwt <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/nbahtwt.csv")
+guards <- nbahtwt %>% filter(pos == "G")
+guards %>% ggpairs(columns = c("ht", "wt", "age"))
+```
+
+We can see there is a relatively strong positive linear relationship between 
+weight and height. That is, as height increases for NBA guards, the weight of
+NBA guards tends to increase as well. There are not strong linear relationships
+between weight and age or height and age of NBA guards. 
+
+#### b
+```{r}
+guards.lm <- lm(wt ~ ht + age, data=guards)
+guards.summary <- summary(guards.lm)
+print(guards.summary)
+```
+
+#### c
+```{r}
+guards.summary$coefficients
+(guards.summary$sigma)^2
+```
+
+We can see that $\hat\beta_0$ is -148.82, $\hat\beta_1$ is 4.43, and
+$\hat\beta_2$ is 0.41. Additionally, $\hat\sigma^2$ is 142.97.
+
+#### d
+The degrees of freedom for the fitted model is 199. This can be calculated using
+the formula n-(p+1) = 202 - (2+1) = 199. 
+
+#### e
+```{r}
+X <- model.matrix(guards.lm)
+XtX <- (t(X)) %*% X
+print(XtX)
+```
+
+#### f
+```{r}
+solve(XtX)
+```
+
+#### g
+##### i
+```{r}
+hatvalues(guards.lm)[1]
+```
+
+##### ii
+```{r}
+H <- X %*% solve(t(X)%*%X)%*%t(X)
+H[1]
+```
+
+#### h
+##### i
+```{r}
+plot(fitted(guards.lm), rstandard(guards.lm), xlab = "Fitted Values", 
+     ylab = "Standardized Residuals")
+```
+
+##### ii
+```{r}
+plot(guards$ht, rstandard(guards.lm), xlab = "Height", 
+     ylab = "Standardized Residuals")
+```
+
+##### iii
+```{r}
+plot(guards$age, rstandard(guards.lm), xlab = "Age", 
+     ylab = "Standardized Residuals")
+```
+
+When looking at the three plots of the standardized residuals, we can see that
+none of the plots suggest any problems with our assumptions about the mean and
+variance functions. This is true because the plots all appear to be null plots
+with no fanning patterns, suggesting that the mean and variance and normal.
+
+------

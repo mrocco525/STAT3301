@@ -1,0 +1,216 @@
+---
+title: "STAT 3301"
+author: "Project 3"
+date: "FirstName LastName (name.n)"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r include=FALSE, eval-FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(leaps)
+library(MASS)
+library(gridExtra)
+library(broom)
+```
+
+#### Instructions
+
+Use R Markdown to prepare your answers to the questions posed in the parts below. Unlike a usual homework assignment, where an answer to a question might include some R output and numerical values from calculations, most questions below require written responses in sentence/paragraph form. For these questions, you will not receive full credit for simply providing R output or the
+result of calculations: you need to clearly describe what you have done and provide appropriate discussion and interpretation. You can include small amounts of R output and calculations in R in your responses, but these should be **in support of your written answers** and are not a substitute for a full written response. Do not include R code/output that is unrelated to your written answers. Your write-up should be easy to read and appropriately formatted; plots and graphs should be appropriately sized, with easy to read labels and symbols; numeric results should be presented in a way that is easy to read.
+
+
+#### Data Description
+
+Concrete is one of the most popular building materials in the world. It is a composite material, made from a mixture of other materials such as cement, water, fine aggregate (such as sand), and coarse aggregate (such as gravel). One advantage of concrete is that over time the chemical reactions in the mixture complete, causing it to harden and gain strength. The data set "concrete_data.csv" on Carmen contains measurements of 1030 samples of concrete from Yeh (1998). The following variables are included in the data set:
+
+
+| Variable Name | Description |
+| ------------: | :-------------------------------------------------------------------- |
+| `cement` | The amount of cement in the sample (in $kg/m^3$)  |
+| `slag` | The amount of blast furnace slag in the sample (in $kg/m^3$) |
+| `flyash` | The amount of fly ash in the sample (in $kg/m^3$) |
+| `water` | The amount of water in the sample (in $kg/m^3$) |
+| `superplasticizer` | The amount of superplasticizer in the sample (in $kg/m^3$) |
+| `coarseaggregate` | The amount of coarse aggregate in the sample (in $kg/m^3$) |
+| `fineaggregate` | The amount of fine aggregate in the sample (in $kg/m^3$) |
+| `age` | The age of the sample (in days) |
+| `csMPa` | The compressive strength of the sample (in MPa)|
+
+
+#### Questions to Answer
+
+1. Slag, flyash, and superplasticizer are all optional elements in concrete. As you did in the previous project, create a new binary variable in the data set called catflyash which has a value of 1 if there was some amount of flyash in the mixture and a value of 0 otherwise. Also create a new binary variable called catsuper that has a value of 1 if there was some amount of superplasticizer in the mixture and a value of 0 otherwise, and create a new binary variable in the data set called catslag which has a value of 1 if there was some amount of slag in the mixture and a value of 0 otherwise. For this question you will investigate potential interactions between these binary variables and the other mixture elements (you don't have to consider interactions with age) or between the binary variables themselves. Specifically, you need to find **four** two-way interaction effects that you think are useful in explaining additional variability in concrete strength compared to a model that already contains the main effects of cement, water, coarseaggregate, fineaggregate, age, catslag, catflyash, and catsuper. For each interaction effect you chose, you need to justify its usefulness both graphically and numerically. For the graph, you must point to specific features of the graph that illustrate a potentially useful interaction effect. For the numerical justification, you should perform a formal hypothesis test or give a solid argument based on summary statistics or criterion measures. Make sure to specify any parameters you are using for hypothesis tests.
+
+2. For this question you will consider models that include main effects of cement, water, coarseaggregate, fineaggregate, age, catslag, catflyash, and catsuper, as well as the four interaction effects you found in question 1. That gives a total of 12 potential effects terms in addition to the intercept. Using any of the methods learned in the last part of the course (cross-validation, stepwise regression, best subsets regression, etc.) choose **two** models from among those containing at least one of these terms that you feel are optimal. You do not have to consider transformations or other interactions. In paragraph form, describe the process that you went through to obtain those two models. Provide estimated mean functions of both models and discuss their similarities and differences.
+
+3. Use residuals plots to evaluate the two models you chose in question 2 in terms of MLR assumptions. Be sure to include the plots in your write-up and refer to specific aspects of the plots when discussing these assumptions. Based on the residuals plots and any other aspects of the two models, choose **one** model to recommend for use. Write a couple sentences summarizing how "good" the model you choose is, in terms of fit, residuals, interpretability, and/or any other relevant criteria.
+
+
+#### References
+I-Cheng Yeh, "Modeling of strength of high performance concrete using artificial 
+neural networks," Cement and Concrete Research, Vol. 28, No. 12, pp. 1797-1808 (1998)
+
+### Problem 1
+```{r, echo=FALSE, message=FALSE}
+concrete <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/concrete_data.csv")
+catflyash = factor(as.numeric(concrete$flyash > 0))
+catflysuper = factor(as.numeric(concrete$superplasticizer > 0))
+catslag = factor(as.numeric(concrete$slag > 0))
+concrete.lm <- lm(csMPa ~ cement + water + coarseaggregate + fineaggregate +
+                age + catflyash + catflysuper + catslag,
+                data = concrete)
+```
+
+The four interactions effects I have chosen to use are as follows: 
+\
+catflysuper:catflyash, catflyash:fineaggregate, catflysuper:water, and
+catslag:coarseaggregate. The reasoning for choosing these effects is that they
+all have a clear change in the graphs when the categorical variable is included
+in the model compared to when it is not included.These graphs can be seen below:
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+concrete %>% ggplot(aes(x = catflyash, y = csMPa)) +
+  geom_boxplot(aes(color = catflysuper), method = "lm", se=F) + 
+  ggtitle("catflysuper:catflyash")
+
+concrete %>% ggplot(aes(x = fineaggregate, y = csMPa)) + 
+  geom_point(aes(color = catflyash))+
+  geom_smooth(aes(color = catflyash), method = "lm", se=F) + 
+  ggtitle("catflyash:fineaggregate")
+
+concrete %>% ggplot(aes(x = coarseaggregate, y = csMPa)) + 
+  geom_point(aes(color = catslag))+
+  geom_smooth(aes(color = catslag), method = "lm", se=F) + 
+  ggtitle("catslag:coarseaggregate")
+
+concrete %>% ggplot(aes(x = water, y = csMPa)) + 
+  geom_point(aes(color = catflysuper))+
+  geom_smooth(aes(color = catflysuper), method = "lm", se=F) + 
+  ggtitle("catflysuper:water")
+```
+
+As can be seen by the graphs above, all of them have a different fit when the
+categorical variable is included compared to when it is not. In the instance of
+the plot with two categorical variables, we can see that the inclusion of 
+catflysuper affects the slope of catflyash vs. csMPa. When catflyash is not
+included, the inclusion of catflysuper tends to greatly increase csMPa, while if
+catflyash is included, the inclusion of catflysuper does not affect csMPa as much.
+For fineaggregate, if catflyash is included, the slope of csMPa tends to be 
+slightly larger than if catflyash is not included. For water, if catflysuper is
+included, the slope of csMPa tends to be much smaller than if catflysuper is not
+included. Finally, for coarseaggregate, if catslag is included, the slope of
+csMPa tends to be smaller than is catslag is not included. We can also show that
+these interactions have numerical justification in the form of p-values, as can
+be seen below.
+
+```{r, echo=FALSE}
+concrete.ex1 <- lm(csMPa ~ cement + water + coarseaggregate +
+                fineaggregate + age + catflyash + catflysuper + catslag + 
+                catflysuper*catflyash, data = concrete)
+
+concrete.ex2 <- lm(csMPa ~ cement + water + coarseaggregate +
+                fineaggregate + age + catflyash + catflysuper + catslag + 
+                catflyash*fineaggregate, data = concrete)
+
+concrete.ex3 <- lm(csMPa ~ cement + water + coarseaggregate +
+                fineaggregate + age + catflyash + catflysuper + catslag + 
+                catslag*coarseaggregate, data = concrete)
+
+concrete.ex4 <- lm(csMPa ~ cement + water + coarseaggregate +
+                fineaggregate + age + catflyash + catflysuper + catslag + 
+                catflysuper*water, data = concrete)
+
+print("catflysuper:catflyash" )
+print(summary(concrete.ex1)$coefficients[10,4])
+
+print("catflyash:fineaggregate")
+print(summary(concrete.ex2)$coefficients[10,4])
+
+print("catslag:coarseaggregate")
+print(summary(concrete.ex3)$coefficients[10,4])
+
+print("catflysuper:water")
+print(summary(concrete.ex4)$coefficients[10,4])
+```
+
+As can be seen by the above p-values, all of the interaction effects are helpful
+for a model that contains all of the main effects.
+
+### Problem 2
+```{r, echo=FALSE, include=FALSE}
+null <- lm(csMPa ~ 1, data = concrete)
+concrete.lm2 <- lm(csMPa ~ cement + water + coarseaggregate +
+                fineaggregate + age + catflyash + catflysuper + catslag + 
+                catflysuper*catflyash + catflyash*fineaggregate + 
+                catflysuper*water + catslag*coarseaggregate,
+                data = concrete)
+
+stepAIC(concrete.lm2, scope = list(upper = null), direction = "both", k=2)
+stepAIC(null, scope = list(upper = concrete.lm2), direction = "both", k=2)
+```
+
+To find the two models that would include all of the main effects as well as my 
+four interaction effects from problem 1, I used stepwise regression to add and
+remove effects based on how they changed the AIC of the model. In doing so, I
+tried this method both from the null model and from the full model. Both of the
+stepwise regressions output the same model, so that was one of the models that I
+chose to be considered optimal. The other model that I chose was that with the
+second lowest AIC from the stepwise regressions. The estimated mean functions of
+the models are as follows:
+
+\[
+E(csMPa) = \beta_0 + \beta_1cement_i + \beta_2catflysuper_i + \beta_3age_i + 
+\beta4catslag_i + \beta_5water_i + \beta_6fineaggregate_i + \beta_7catflyash_i
++ \beta_8coarseaggregate_i + \beta_9catflysuper:catflyash_1 + 
+\beta_{10}fineaggregate:catflyash_i + \beta_{11}catslag:coarseaggregate_i +
+\beta_{12}catflysuper:water
+\]
+
+\
+
+\[
+E(csMPa) = \beta_0 + \beta_1cement_i + \beta_2catflysuper_i + \beta_3age_i + 
+\beta4catslag_i + \beta_5water_i + \beta_6fineaggregate_i + \beta_7catflyash_i
++ \beta_8coarseaggregate_i + \beta_9catflysuper:catflyash_1 + 
+\beta_{10}fineaggregate:catflyash_i + \beta_{11}catslag:coarseaggregate_i
+\]
+
+When looking at the two models, we can see that they are very similar. Both of
+the models contain almost all of the effects. The only difference between the 
+two models is that the second model does not contain catflysuper:water, while the
+first model does. Besides this difference, the two models are the exact same.
+
+
+### Problem 3
+```{r, echo=FALSE}
+concrete.model1 <- lm(csMPa ~ cement + catflysuper + age + water + fineaggregate
+                      + catflyash + coarseaggregate + catflysuper*catflyash +
+                        catflyash*fineaggregate + catflysuper*water +
+                        catslag*coarseaggregate, data = concrete)
+
+concrete.model2 <- lm(csMPa ~ cement + catflysuper + age + water + fineaggregate
+                      + catflyash + coarseaggregate + catflysuper*catflyash +
+                        catflyash*fineaggregate +
+                        catslag*coarseaggregate, data = concrete)
+
+plot(fitted(concrete.model1), rstandard(concrete.model1),
+     main = "Residuals for Model 1", xlab = "Fitted Values", 
+     ylab = "Standardized Residuals", abline(h = 0))
+     
+plot(fitted(concrete.model2), rstandard(concrete.model2), 
+     main = "Residuals for Model 2", xlab = "Fitted Values", 
+     ylab = "Standardized Residuals", abline(h = 0))
+```
+
+Although neither of the models have residuals that are very closely fit, I would
+say that generally both of the residuals plots have a relatively even 
+distribution. However, I believe that model 1 has a slightly better fit
+and I would recommend this model for use. Overall, this model is pretty good in
+terms of fit, although it is not perfect (which is to be expected). In terms of
+interpretability, I would say it is somewhat good, although it is not easy to 
+interpret interaction effects, which the model does contain. In conclusion, this
+model will be useful, but it is likely not the best model possible.
+

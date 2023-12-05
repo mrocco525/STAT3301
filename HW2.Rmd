@@ -1,0 +1,149 @@
+---
+title: "Stat 3301: Homework 2"
+date: "Due by September 7, 2022"
+author: "Mason Rocco (rocco.58)"
+output: html_document
+---
+\
+
+Setup:
+```{r message=FALSE}
+library(alr4)
+library(tidyverse)
+```
+
+\
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. Use the option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+- Data files mentioned below are from the `alr4` package unless specified otherwise.
+
+\
+
+#### Question 1
+<!-- Basic plotting, simple linear regression relationship, transformations -->
+Complete **Problem 1.1** from Weisberg: (Data file: `UN11`) "The data in the file `UN11`..."
+
+**Note**: for part 1.1.3, the `R` function `log` corresponds to the natural logarithm
+(base *e*).  The `R` function `log10` corresponds to the base 10 logarithm.  Other bases
+can be obtained via `log(x, base = ...)`. Note that in this class we will use the notation
+$\log_{10}$ to refer to the base 10 logarithm and $\log$ to refer to the base *e* logarithm
+(this is typical in the field of statistics).
+
+
+\
+
+##### Solution to Question 1
+
+**Part 1.1.1:**
+
+Fertility is the response and PPGDP is the predictor.
+
+**Part 1.1.2:**
+```{r, echo=TRUE}
+UN <- alr4::UN11
+UN %>% ggplot(aes(x=UN$ppgdp, y= UN$fertility)) + geom_point() + 
+  labs(x="PPGDP", y="Fertility")
+```
+
+I would say that a straight line mean function does not appear to be plausible 
+to summarize this graph, since there does not appear to be a linear relationship
+between PPGDP and fertility in this graph.
+
+**Part 1.1.3:**
+```{r, echo=TRUE}
+UN <- alr4::UN11
+UN %>% ggplot(aes(x=log(UN$ppgdp), y= log(UN$fertility))) + geom_point() + 
+  labs(x="Log of PPGDP", y="Log of Fertility")
+```
+
+I would argue that the simple linear regression model is plausible for a summary
+of this graph, as it seems there is roughly a negative linear correlation. As
+the log of PPGDP increases, the log of fertility decreases.
+
+------
+
+
+#### Question 2
+<!-- Basic plotting, examining relationships between variables, tweaking plots -->
+Problem 1.3 from Weisberg: (Data file: `Mitchell`) The data shown in Figure 1.12..."
+
+**Hint**: Part 1.3.2 asks you to make a plot where the length of the horizontal axis is
+at least 4 times the length of the vertical axis. This can be done by specifying the
+R chunk option `fig.asp = ?` for an appropriate value of the question mark, like this:
+
+<pre><code>```{r fig.asp = ?}
+# code goes here
+```</code> </pre>
+
+You might try Googling "fig.asp RMarkdown" or something along those lines if you can't
+find help on the `fig.asp` option in R. If you get an error that says 
+`figure margins too large` when you try to make the plot, just try adjusting the value of `?` 
+until you get something close a 4 to 1 ratio.
+
+
+\
+
+##### Solution to Question 2
+
+**Part 1.3.1:**
+It seems as if the soil temperature does not have much dependence on the month
+number, as the temperatures are relatively similar for all month numbers.
+
+
+**Part 1.3.2:**
+```{r fig.asp=.33}
+mitchell <- alr4::Mitchell
+mitchell %>% ggplot(aes(x=Month, y=Temp)) + geom_point() + 
+  labs(x="Months After January 1976", y="Average Soil Temperature")
+```
+
+After changing the aspect ratio of the graph, it seems as if the temperature of
+the soil slightly increases and decreases as the month numbers change, which 
+logically makes sense considering how temperatures change with seasons.
+
+------
+
+
+#### Question 3
+<!--Scatterplot matrix, relationships between variables -->
+Complete **Problem 1.6** from Weisberg: (Data file `Rateprof`) "In the website and online forum
+`RateMyProfessors.com`..."
+
+**Note**: In addition to summarizing the relationships, **also** reproduce the
+scatterplot matrix.
+
+Recall that you can create a subset of the whole data set that corresponds to the 
+variables you want to plot using:
+```{r eval = FALSE}
+subset(Rateprof, select = c(quality, clarity, helpfulness, easiness, raterInterest))
+```
+or
+```{r eval = FALSE}
+Rateprof %>% select(quality, clarity, helpfulness, easiness, raterInterest)
+```
+
+
+\
+
+
+##### Solution to Question 3
+```{r echo=TRUE}
+rate <- alr4::Rateprof
+pairs(subset(rate, select= c(quality, clarity, helpfulness, easiness,
+                             raterInterest)))
+```
+
+When looking at the scatterplot matrix, we can see that there are clearly 
+positive linear relationships between quality and clarity, quality and
+helpfulness, and clarity and helpfulness. In terms of the other variables, the
+relationships are not as clear, but there are loose linear relationships in
+most scenarios.

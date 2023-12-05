@@ -1,0 +1,181 @@
+---
+title: "STAT 3301"
+author: "Project 1"
+date: "Mason Rocco (rocco.58)"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r include=FALSE}
+library(broom)
+library(tidyverse)
+library(GGally)
+```
+
+#### Instructions
+
+Use R Markdown to prepare your answers to the questions posed in the parts below. Unlike a usual homework assignment, where an answer to a question might include some R output and numerical values from calculations, most questions below require written responses in sentence/paragraph form. For these questions, you will not receive full credit for simply providing R output or the
+result of calculations: you need to clearly describe what you have done and provide appropriate discussion and interpretation. You can include small amounts of R output and calculations in R in your responses, but these should be **in support of your written answers** and are not a substitute for a full written response. Do not include R code/output that is unrelated to your written answers. Your write-up should be easy to read and appropriately formatted; plots and graphs should be appropriately sized, with easy to read labels and symbols; numeric results should be presented in a way that is easy to read.
+
+
+#### Data Description
+
+Concrete is one of the most popular building materials in the world. It is a composite material, made from a mixture of other materials such as cement, water, fine aggregate (such as sand), and coarse aggregate (such as gravel). One advantage of concrete is that over time the chemical reactions in the mixture complete, causing it to harden and gain strength. The data set "concrete_data.csv" on Carmen contains measurements of 1030 samples of concrete from Yeh (1998). The following variables are included in the data set:
+
+
+| Variable Name | Description |
+| ------------: | :-------------------------------------------------------------------- |
+| `cement` | The amount of cement in the sample (in $kg/m^3$)  |
+| `slag` | The amount of blast furnace slag in the sample (in $kg/m^3$) |
+| `flyash` | The amount of fly ash in the sample (in $kg/m^3$) |
+| `water` | The amount of water in the sample (in $kg/m^3$) |
+| `superplasticizer` | The amount of superplasticizer in the sample (in $kg/m^3$) |
+| `coarseaggregate` | The amount of coarse aggregate in the sample (in $kg/m^3$) |
+| `fineaggregate` | The amount of fine aggregate in the sample (in $kg/m^3$) |
+| `age` | The age of the sample (in days) |
+| `csMPa` | The compressive strength of the sample (in MPa)|
+
+
+We are interested in understanding how the compressive strength of a concrete sample depends on the age of the sample and the amounts of the mixture components. 
+
+#### Questions to Answer
+
+1. Use appropriate plots to explore the pairwise relationships between the response variable `csMPa` and the individual 
+mixture components and between the individual mixture components themselves. In paragraph form, describe what you find and explain the relationships. Discuss which variables are positively associated and negatively associated, and discuss the strengths of the various pairwise associations. Include appropriate graphs in support of your discussion. Summarize what this tells us about how the mixture materials are associated with the strength of concrete.
+
+2. Use appropriate plots and/or regression output to determine whether `age` should be transformed on a natural log scale before being used in a SLR model with `csMPa` as the response. In paragraph form, explain your choice of `age` or `log(age)` as the preferred predictor, keeping in mind the assumptions of the SLR model. (For the purpose of the problem, suppose that `age` and `log(age)` are the only options and that you must choose one of them even if neither fit is good).
+
+3. Now consider the SLR model with `cement` as the explanatory variable and `csMPa` as the response. Formally write down the model statement and assumptions. Fit the model, and provide a table with the estimated regression coefficients and standard errors, as well as the usual *t* statistics and *p*-values that are reported in standard regression output. Interpret the estimated slope from the model. Explain why the y-intercept in the model doesn't have a meaningful interpretation.
+
+4. Provide appropriate plots of residuals to check the fit of the model from problem 3. Use the plots to discuss (in paragraph form) whether or not the model assumptions seem reasonable, or whether you diagnose any lack of fit. Make sure to clearly describe how you were using the plots to support your conclusions.
+
+5. Construct a 90% confidence interval for the mean strength of samples of concrete that contain 400 $kg/m^3$ of cement, as well as a 90% prediction interval for the strength of a new sample of concrete that contains 400 $kg/m^3$ of cement. Interpret both intervals, and explain why one interval is wider than the other. 
+
+#### References
+I-Cheng Yeh, "Modeling of strength of high performance concrete using artificial 
+neural networks," Cement and Concrete Research, Vol. 28, No. 12, pp. 1797-1808 (1998)
+
+
+### Problem 1
+
+We can use the below scatter plot matrix to explore the pairwise relationships 
+between the response variable csMPa and the individual mixture components, as
+well as the relationships between the mixture components themselves. When viewing
+the scatter plot matrix, we can see that the cement component seems to have the
+strongest positive linear correlation with csMPa out of the mixture components,
+while the slag and superplasticizer also seem to have slightly positive linear
+correlations with csMPa. This tells us that an increase in cement, slag, or
+superplasticizer would tend to cause an increase in the relative strength of the
+concrete sample. Additionally, we can see that most of the individual mixture
+components do not have much of a linear relationship, but some of them do have
+slightly positive linear relationships. Also shown below is the individual plot 
+for amount of cement versus csMPa with a fitted regression line, showing the 
+positive linear relationship between the two.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(readr)
+concrete_data <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/concrete_data.csv")
+concrete.lm = lm(csMPa ~ cement, data = concrete_data)
+concrete_data %>% ggpairs(columns = c("cement", "slag", "flyash", "water", 
+                                      "superplasticizer", "coarseaggregate",
+                                      "fineaggregate","csMPa"))
+```
+
+
+```{r echo=FALSE}
+plot(concrete_data$cement, concrete_data$csMPa,
+     xlab = "Amount of Cement (kg/m^3)",
+     ylab = "Compressive Strength (MPa)",
+     main = "Amount of Cement vs. Compressive Strength in Concrete Samples")
+abline(reg = concrete.lm)
+```
+
+
+
+### Problem 2
+
+I believe that the age variable should be transformed on a natural log scale
+before being used in a SLR model with csMPa as the response. The reason for this
+is that the age variable spans multiple orders of magnitude, and the plot of
+age vs. csMPa shows very little correlation. When transforming the variable on
+a natural log scale, we can see that there is a more visible correlation for the
+SLR model with log(age) as the explanatory variable compared to when the age is
+the explanatory variable, illustrated by the plots below.
+
+```{r echo=FALSE}
+plot(concrete_data$age, concrete_data$csMPa, xlab = "Age (days)", 
+     ylab = "Compressive Strength (MPa)", 
+     main = "Age vs. Compressive Strength of Concrete Samples")
+plot(log(concrete_data$age), concrete_data$csMPa, xlab = "log(Age (days))",
+     ylab = "Compressive Strength (MPa)", 
+     main = "Natural Log of Age vs. Compressive Strength of Concrete Samples")
+```
+
+### Problem 3
+
+The SLR model with cement as the explanatory variable and csMPa as the response 
+variable assumes linearity, constant variance, and normal distribution of errors.
+The SLR model can be written as such: $csMPa_i = \beta_0 + \beta_1(Cement_i) + e_i,$
+$e_i\stackrel{\mathrm{iid}}{\sim}\mbox{N} (0, \sigma^2), \;\;\; i = 1, \ldots, n$.
+Below are the fitted values for the SLR model.
+
+```{r echo=FALSE}
+concrete.summary <- summary(concrete.lm)
+print(concrete.summary$coefficients)
+```
+
+When looking at a fitted SLR model with cement as the explanatory variable and
+csMPa as the response variable, we can see that there is a weak linear correlation
+between cement levels and compressive strength of a sample. That is, as the amount
+of cement in the sample increases, the compressive strength of the sample tends
+to slightly increase as well. We can see that $\hat\beta_1$, the estimated slope
+of the model, is roughly **0.08**, and  $\hat\beta_0$, the estimated y-intercept of 
+the model, is roughly **13.44**. These values tell us plenty of information about 
+the SLR model. To begin, the estimated slope of the model, 0.08, tells us that 
+as the amount of cement in the sample increases, we expect a slight increase in 
+the compressive strength of the sample. Precisely, an increase in $1 kg/m^3$ of 
+cement would tend to be associated with an increase in strength of 0.08 csMPa. 
+Additionally, we can say that the estimated y-intercept of the model does not 
+have a meaningful interpretation since there will most likely not be a scenario
+where a sample of concrete has no cement in it.
+
+### Problem 4
+
+Looking at the plots for the fits of the model from problem 3 (shown below), we
+can distinguish that the model assumptions seem reasonable. The plot of fitted 
+values versus standardized residuals appears to be a null plot, which means that
+the model is linear. Along with this, the fitted values versus standardized 
+residuals plot has no curved or fanning pattern, proving that the model has 
+constant variance. Additionally, the normal probability plot shows that the 
+assumption of normality for the errors of the model seems to be reasonable.
+
+```{r echo=FALSE}
+plot(fitted(concrete.lm), rstandard(concrete.lm),
+     xlab = "Fitted Values", 
+     ylab = "Standardized Residuals",
+     main = "Fitted Values vs Standardized Residuals"); abline(h=0)
+qqnorm(resid(concrete.lm)); qqline(resid(concrete.lm))
+```
+
+### Problem 5
+```{r echo=FALSE}
+cement.conf <- predict(concrete.lm, newdata = data.frame(cement=(400)),
+        interval = "confidence")
+cement.pred <- predict(concrete.lm, newdata = data.frame(cement=(400)),
+        interval = "prediction")
+
+
+```
+
+The 90% confidence interval for the mean strength of samples of concrete that
+contain $400 kg/m^3$ of concrete is **(43.93, 46.62)**, while the 90% prediction
+interval for the mean strength of samples of concrete that contain $400 kg/m^3$ 
+of concrete is **(16.8, 73.75)**. The reason that these intervals are different 
+is because of the nature of the intervals. The confidence interval tells us that
+we are 90% confident that the true average strength for a sample of concrete 
+that contains $400 kg/m^3$ of concrete is between 43.93 and 46.62 MPa. The
+prediction interval, however, says that we are 90% confident that a new concrete
+sample that has $400 kg/m^3$ of concrete will have a strength between 16.8 and 
+73.75 MPa. The reason the prediction interval is so much wider is because we 
+are trying to predict a new value, instead of interpreting what the true average
+strength may be.

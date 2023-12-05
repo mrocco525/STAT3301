@@ -1,0 +1,187 @@
+---
+title: "Stat 3301: Homework 9"
+date: "FirstName LastName (name.n)"
+author: "Due by date and time specified on Carmen"
+output: html_document
+---
+
+
+\
+
+
+Setup:
+```{r message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(alr4)
+library(tidyverse)
+library(broom)
+```
+
+\
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. I have set the global option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+- Data files mentioned below are from the `alr4` package unless specified otherwise.
+
+\
+
+#### Concepts \& Application
+
+In this assignment, you will gain experience with
+
+* construct confidence intervals for the unknown mean of a response variable in a model with one categorical predictor and one continuous predictor.
+* fitting models with an interaction between a continuous and a categorical predictor.
+* plotting and comparing fitted models.
+
+------
+
+## Question 1
+This question concerns the `UN11` data set in the textbook that we used in the previous homework. Here we consider a "main effects" model that uses both `log(ppgdp)` and `group` to predict female life expectancy (`lifeExpF`). The "main effects" model allows for different intercepts for the regression of `lifeExpF` on `log(ppgdp)` for different levels of the `group` variable but requires that the slope parameters are the same across levels of `group`. Use the R output below to answer the following questions.
+```{r}
+summary(lm(lifeExpF ~ group + log(ppgdp), data = UN11))
+```
+
+(a) Use appropriate dummy variables to write down the mean function that R used when fitting the model above:
+\[
+  E(lifeExpF \mid group, log(ppgdp)) = \hspace{4in}
+\]
+
+
+(b) Construct a 95% confidence interval for the coefficient labeled `groupafrica` and explain its meaning.
+
+(c) Explain the meaning of the estimated coefficient for `log(ppgdp)`.
+
+(d) Use the `predict` function to compute a 95% confidence interval for the average female life expectancy
+for countries in the OECD group with a **log** per person gross domestic product of 10.5 log US dollars per person.
+
+(e) Explain what hypotheses are being tested in the `groupother` row of the output above. Write a sentence 
+interpreting the result of the test.
+
+
+
+\
+
+
+## Solution to Question 1
+### a
+  \[E(lifeExpF \mid group, log(ppgdp)) = \beta_0+\beta_1(U_{other}i)
+  +\beta_2(U_{africa}i)+\beta_3(log(ppgdp)_i)+e_i, 
+  e_i \stackrel{\mathrm{iid}}{\sim} \mbox{N}(0, \sigma^2)
+  \]
+  
+### b
+```{r}
+UN <- alr4::UN11
+UN.lm <- lm(lifeExpF ~ group + log(ppgdp), data = UN)
+Bhat0 <- summary(UN.lm)$coefficient[3,1]
+se <- summary(UN.lm)$coefficient[3,2]
+t <- qt(.95/2, 195)
+lwr <- Bhat0 - t*se
+upr <- Bhat0 + t*se
+print(c(lwr,upr))
+```
+
+Given that the 95% confidence interval for $\beta_2$ is **(-12.07, -12.27)**, we
+can say that we are 95% confident that the value of $\beta_2$ is captured by the
+interval.
+
+### c
+Given that the estimated coefficient for log(ppgdp) is 3.177, we can say that
+for females in the same group, a 10% increase in ppgdp is associated with an
+estimated 30.28% increase in years of life expectancy.
+
+### d
+```{r}
+predict(UN.lm, newdata = data.frame(group = "oecd", ppgdp = exp(10.5)), 
+        level = .95, interval = "pred")
+```
+
+### e
+In the above output, the hypotheses being tested are as follows:
+\
+$H_0: \beta_1 = 0$
+\
+$H_1: \beta_1 \neq 0$
+\
+This means that we are trying to see if the estimate for the coefficient of
+groupother is 0 or not. As the p-value is 0.193, which is higher than most
+reasonable $\alpha$ values, we will fail to reject the null hypothesis. This means
+that we do not have enough evidence to say that the coefficient for groupother is
+not 0.
+\
+------
+
+## Question 2
+**NHL Data Revisited**
+
+Earlier this semester in class we considered the model
+$$
+  \log ttsm_i = \beta_0 + \beta_1 \log estFans_i + e_i
+$$
+that used the estimated number of NHL fans in a city to predict total ticket spending. In this version of the model, $\log$ refers to base $e$ logarithm, and `ttsm` is the total ticket spending in millions of dollars. The fitted model looked like:
+
+```{r echo=FALSE, fig.height=3, fig.width=4, fig.align = "center", message = FALSE}
+nhl = read.csv("C:/Users/mrocc/Desktop/Stat 3301/data/nhlfans3301.csv", header=T) %>% 
+  mutate(ttsm = tts/1e6)
+nhl %>% ggplot(aes(x=log(estFans), y=log(ttsm), color=country)) + geom_point() + geom_smooth(method="lm", se=F, aes(color=NA), size=0.75)
+```
+
+Our analysis earlier in the semester ignored the variable `country`. We will now consider whether `country` is a useful predictor in the model after adjusting for the effect of estimated fans. Another way to think about this is whether the relationship between `ttsm` and `estFans` is different for teams in the USA vs. Canada (and if so, how is that relationship different).
+
+(a) Fit a model that includes both main and interaction effects for `log(estFans)` and `country` (i.e., a model that allows for different intercepts and slopes for `log(estFans)` across different levels of `country`). Write down the estimated regression equations separately for teams in the USA and Canada. Make a plot of the data (color coded by country) that includes the two estimated regression lines (color coded by country).
+
+(b) Do the same as you did in part (a), but now for the model that includes **only** main effects terms for both predictors (i.e., a model with the same slope but different intercepts for the different levels of `country`).
+
+(c) You now have three potential models: one that assumes the relationship between `log(ttsm)` and `log(estFans)` is exactly the same no matter the country (`log(ttsm) ~ log(estFans)`), one that assumes parallel regression lines (`log(ttsm) ~ country + log(estFans)`), and one that allows for different regression relationships (`log(ttsm) ~ country*log(estFans)`). Based on the plots and the summaries of the fitted models (*t*-tests, etc.), which model do you think best describes the relationship between variables?
+
+
+
+\
+
+
+## Solution to Question 2
+Your answers go here.
+
+### a
+```{r}
+nhl <- read_csv("C:/Users/mrocc/Desktop/Stat 3301/data/nhlfans3301.csv")
+modInt <- lm(log(tts/1e6) ~ country * log(estFans), data = nhl)
+plotInt = augment(modInt) %>% 
+  ggplot(aes(x = log(nhl$estFans), y = log(nhl$tts/1e6), color = nhl$country)) + geom_point() +
+  geom_line(aes(y = .fitted), size = 1) + theme_bw(22) +
+  xlab("log(estFans)") + ylab("log(ttsm)") + labs(color = "Country")
+plotInt
+```
+
+
+### b
+```{r}
+modMain <- lm(log(tts/1e6) ~ country + log(estFans), data = nhl)
+plotMain = augment(modMain) %>% 
+  ggplot(aes(x = log(nhl$estFans), y = log(nhl$tts/1e6), color = nhl$country)) + geom_point() +
+  geom_line(aes(y = .fitted), size = 1) + theme_bw(22) +
+  xlab("log(estFans)") + ylab("log(ttsm)") + labs(color = "Country")
+plotMain
+```
+
+
+### c
+```{r}
+summary(modInt)
+summary(modMain)
+```
+
+When looking at the three potential models for the relationship between log(ttsm)
+and log(estFans) while considering the country of the team, I would say that the
+model that best describes the relationships between the variables is the model
+that allows for different regression relationships. The reason for this is that
+this model seems to more accurately shows the slopes and intercepts, and the
+t-tests and p-values reflect that.

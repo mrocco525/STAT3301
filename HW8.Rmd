@@ -1,0 +1,172 @@
+---
+title: "Stat 3301: Homework 8"
+date: "FirstName LastName (name.n)"
+author: "Due by date and time specified on Carmen"
+output: html_document
+---
+
+
+\
+
+
+Setup:
+```{r message = FALSE}
+library(alr4)
+```
+
+\
+
+#### Instructions
+- Replace "FirstName LastName (name.n)" above with your information.
+- Provide your solutions below in the spaces marked "Solution:".
+- Include any R code that you use to answer the questions; if a numeric answer is required, show how you calculated it in R. I have set the global option `echo = TRUE` to make sure the R code is displayed.
+- Knit this document to HTML and upload both the HTML file and your completed Rmd file to Carmen
+- Make sure your solutions are clean and easy-to-read by
+    - formatting all plots to be appropriately sized, with appropriate axis labels.
+    - only including R code that is necessary to answer the questions below.
+    - only including R output that is necessary to answer the questions below (avoiding lengthy output).
+    - providing short written answers explaining your work, and writing in complete sentences.
+- Data files mentioned below are from the `alr4` package unless specified otherwise.
+
+\
+
+#### Concepts \& Application
+
+In this assignment, you will gain experience with
+
+* creating dummy variables.
+* interpreting coefficients in a one-factor regression model.
+* identifying the mean function for a one-factor model based on R output.
+* constructing confidence intervals for group means.
+* performing hypothesis tests about differences in group means.
+
+
+#### Question 1
+
+This question concerns the `UN11` data set in the textbook. We will use the factor variable `group`
+to explain differences in the distribution of `log(ppgdp)`, the natural logarithm of the `ppgdp`
+variable. See the textbook and `?UN11` for more information about the data set. For this question,
+`group` is the predictor variable and `log(ppgdp)` is the response variable.
+
+
+(a) Consider the linear model that uses `group` to explain `log(ppgdp)`:
+$$
+  \log(\mathtt{ppgdp}_i) = \beta_0 + \beta_1 U_{oecd, i} + \beta_2 U_{africa, i} + e_i,
+$$
+where $e_i \stackrel{\mathrm{iid}}{\sim} \mbox{N}(0, \sigma^2)$ and the *U* variables
+are dummary variables (0/1 indicators) for the value of the `group` variable. Manually
+construct the dummy variables $U_{oecd,i}$ and $U_{africa,i}$ needed to fit the model.
+Show your code.
+
+(b) Fit the model from part (b) using the dummy variables you constructed. Report the values
+of the estimated parameters $\hat{\beta}_0$, $\hat{\beta}_1$, $\hat{\beta}_2$ and $\hat{\sigma}^2$.
+
+(c) For each of the estimated parameters $\hat{\beta}_0$, $\hat{\beta}_1$ and $\hat{\beta}_2$, write
+a sentence interpreting what the coefficient means in terms of the relationship between `log(ppgdp)`
+and the various levels of the `group` variable.
+
+(d) Show how to use the coefficients $\hat{\boldsymbol{\beta}}$ you estimated above to calculate an 
+estimate of the mean log per person gdp for `oecd` countries, $\hat{E}(\mathtt{log(ppgdp)} \mid 
+\mathtt{group} = \mathtt{oecd})$.
+
+(e) Show how to use the coefficients $\hat{\boldsymbol{\beta}}$ you estimated above to calculate an 
+estimate of the difference in mean log per person gdp bewteen `oecd` countries and countries in `africa`,
+$\hat{E}(\mathtt{log(ppgdp)} \mid \mathtt{group} = \mathtt{oecd}) -\hat{E}(\mathtt{log(ppgdp)} \mid \mathtt{group} = \mathtt{africa})$.
+
+```{r}
+summary(lm(log(ppgdp) ~ group, data = UN11))
+vcov(lm(log(ppgdp) ~ group, data = UN11))
+```
+
+
+Now we allow R to fit the model using the `group` variable directly. You will use the following output to answer the remaining questions.
+
+(f) Use the output above to construct a 95% confidence interval for the mean log per person GDP
+for OECD countries. Do not use the `predict` function; show how to use the output above to
+compute the confidence interval.
+
+(g) Use the output above to perform a hypothesis test to assess whether the mean log per person GDP in countries 
+in Africa is the same as the mean log per person GDP for countries in the "other" category. Clearly write down 
+your hypotheses in terms of model **parameters** ($\beta$s), show how you calculate the test statistic, provide 
+a *p*-value and make a conclusion.
+
+\
+
+
+## Solution to Question 1
+### a
+```{r}
+UN11 <- alr4::UN11
+groupoecd <- as.numeric(UN11$group == "oecd")
+groupafrica <- as.numeric(UN11$group == "africa")
+```
+
+### b
+```{r}
+UN.mod <- lm(log(UN11$ppgdp) ~ groupoecd + groupafrica, data = UN11)
+summary(UN.mod)$coefficients
+summary(UN.mod)$sigma^2
+```
+
+$\hat\beta_0 = 8.60$
+\
+$\hat\beta_1 = 1.76$
+\
+$\hat\beta_2 = -1.55$
+
+### c
+$\hat\beta_0 = 8.60$, meaning that countries that are categorized as other have
+an expected mean of log of ppgdp that is 8.60.
+\
+$\hat\beta_1 = 1.76$, meaning that countries that are members of the OECD have an
+expected mean of log of ppgdp that is 1.76 higher than the baseline, countries
+that are categorized as other.
+\
+$\hat\beta_2 = -1.55$, meaning that countries that are in Africa have an expected
+mean of log of ppgdp that is 1.55 lower than the baseline, countries that are
+categorized as other.
+
+### d
+
+$\hat{E}(log(ppgdp)|group=oecd) = \hat\beta_0 + \hat\beta_1$
+$\hat{E}(log(ppgdp)|group=oecd) = 10.36$
+
+### e
+$\hat{E}(log(ppgdp)|group=oecd) - \hat{E}(log(ppgdp)|group=africa)$
+$=(\hat\beta_0 + \hat\beta_1) - (\hat\beta_0 + \hat\beta_2)$
+$=(\hat\beta_1) - (\hat\beta_2) = 3.31$
+
+### f
+```{r}
+group.mod <- (lm(log(ppgdp) ~ group, data = UN11))
+se <- summary(group.mod)$coefficients[1,2]
+t <- qt(.95, 196)
+Bhat0 <- summary(group.mod)$coefficients[1,1]
+lwr <- Bhat0 - t*se
+upr <- Bhat0 + t*se
+print(c(lwr,upr))
+```
+
+### g
+$H_0: \beta_1 - \beta_2 = 0$
+\
+$H_1: \beta_1 - \beta_2 \neq 0$
+\
+$t = \frac{(\beta_1 - \beta_2)-0}{se(\beta_1 - \beta_2)}$
+\
+```{r}
+tvalue <- (3.3059 - 1.7578) / (0.05463725 + 0.06820830 -2*(0.04303619))
+2 * pt(tvalue, df=196, lower.tail = F)
+```
+
+Given that the p-value for this hypothesis test is very low, we reject the null
+hypothesis that $\beta_1 - \beta_2 = 0$. This means that we do not have 
+statistically significant evidence to say that the mean log(ppgdp) of African 
+countries is equal to the mean log(ppgdp) of countries in the "other" category.
+
+
+------
+
+
+
+
